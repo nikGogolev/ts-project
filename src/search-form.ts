@@ -1,5 +1,48 @@
 import { renderBlock } from './lib.js'
 
+export interface SearchFormData {
+  city: string
+  startDate: string
+  endDate: string
+  maxPrice: number
+}
+
+interface Place {
+  result: string[]
+}
+
+interface PlaceCallback {
+  (error?: Error, result?: Place): void
+}
+
+export const callback: PlaceCallback = (error, result) => {
+  if (error === null && result !== null) {
+    console.log('Success');
+  }
+  else {
+    console.log('Error', error.message);
+
+  }
+}
+
+export function search(searchParams: SearchFormData, callback: PlaceCallback): void {
+  console.log(searchParams);
+  setTimeout(() => {
+    if (Math.random() > 0.5) {
+      callback(null, { result: [] })
+    } else { callback(new Error('My Error')) }
+  }, 2000)
+}
+
+export function collectSearchParams(): SearchFormData {
+  return {
+    city: (document.getElementById('city') as HTMLTextAreaElement).value,
+    startDate: (document.getElementById('check-in-date') as HTMLTextAreaElement).value,
+    endDate: (document.getElementById('check-out-date') as HTMLTextAreaElement).value,
+    maxPrice: +(document.getElementById('max-price') as HTMLTextAreaElement).value
+  }
+}
+
 export function renderSearchFormBlock(startDate?: string, endDate?: string): void {
 
   const minDate = new Date().toISOString().slice(0, 10);
