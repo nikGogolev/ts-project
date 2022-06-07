@@ -1,8 +1,3 @@
-export function renderBlock(elementId, html) {
-  const element = document.getElementById(elementId);
-  element.innerHTML = html;
-}
-
 interface toastMessage {
   text: string;
   type: string;
@@ -11,6 +6,10 @@ interface toastMessage {
 interface toastAction {
   name: string;
   handler: () => void;
+}
+export function renderBlock(elementId: string, html: string): void {
+  const element = document.getElementById(elementId);
+  element.innerHTML = html;
 }
 
 export function renderToast(message: toastMessage, action?: toastAction): void {
