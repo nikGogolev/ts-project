@@ -1,50 +1,99 @@
-import { renderBlock } from './lib.js'
+import { placesCoordinates, renderBlock, renderToast } from "./lib.js";
+import { renderSearchResultsBlock } from "./search-results.js";
 
 export interface SearchFormData {
-  city: string
-  startDate: string
-  endDate: string
-  maxPrice: number
+  city: string;
+  startDate: number;
+  endDate: number;
+  maxPrice: number;
 }
 
-interface Place {
-  result: string[]
+export interface Place {
+  bookedDates: unknown[];
+  description: string;
+  id: number;
+  image: string;
+  name: string;
+  price: number;
+  remoteness: number;
 }
 
 interface PlaceCallback {
-  (error?: Error, result?: Place): void
+  (error?: Error, result?: Place[]): void;
+}
+
+interface requestParameters {
+  coordinates: string;
+  checkinDate: number;
+  checkoutDate: number;
+  maxPrice: number;
 }
 
 export const callback: PlaceCallback = (error, result) => {
   if (error === null && result !== null) {
-    console.log('Success');
+    renderSearchResultsBlock(result);
+  } else {
+    renderToast({ type: "error", text: "Повторите поиск" });
   }
-  else {
-    console.log('Error', error.message);
+};
 
-  }
-}
+export async function search(
+  searchParams: SearchFormData,
+  callback: PlaceCallback
+): Promise<void> {
+  const f = await fetch(
+    `http://127.0.0.1:3030/places?coordinates=${placesCoordinates.get(
+      searchParams.city
+    )}&checkInDate=${searchParams.startDate}&checkOutDate=${
+      searchParams.endDate
+    }&maxPrice=${+searchParams.maxPrice}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+      },
+    }
+  );
+  const d = await f.json();
 
-export function search(searchParams: SearchFormData, callback: PlaceCallback): void {
-  console.log(searchParams);
   setTimeout(() => {
     if (Math.random() > 0.5) {
-      callback(null, { result: [] })
-    } else { callback(new Error('My Error')) }
-  }, 2000)
+      callback(null, d);
+      setTimeout(() => {
+        renderToast(
+          { text: "Поиск устарел. Повторите поиск", type: "error" },
+          {
+            name: "Повторить поиск",
+            handler: () => {
+              search(collectSearchParams(), callback);
+            },
+          }
+        );
+      }, 20000);
+    } else {
+      callback(new Error("My Error"));
+    }
+  }, 500);
 }
 
 export function collectSearchParams(): SearchFormData {
   return {
-    city: (document.getElementById('city') as HTMLTextAreaElement).value,
-    startDate: (document.getElementById('check-in-date') as HTMLTextAreaElement).value,
-    endDate: (document.getElementById('check-out-date') as HTMLTextAreaElement).value,
-    maxPrice: +(document.getElementById('max-price') as HTMLTextAreaElement).value
-  }
+    city: (document.getElementById("city") as HTMLTextAreaElement).value,
+    startDate: +new Date(
+      (document.getElementById("check-in-date") as HTMLTextAreaElement).value
+    ),
+    endDate: +new Date(
+      (document.getElementById("check-out-date") as HTMLTextAreaElement).value
+    ),
+    maxPrice: +(document.getElementById("max-price") as HTMLTextAreaElement)
+      .value,
+  };
 }
 
-export function renderSearchFormBlock(startDate?: string, endDate?: string): void {
-
+export function renderSearchFormBlock(
+  startDate?: string,
+  endDate?: string
+): void {
   const minDate = new Date().toISOString().slice(0, 10);
 
   const today = new Date();
@@ -58,9 +107,8 @@ export function renderSearchFormBlock(startDate?: string, endDate?: string): voi
   tempDate.setDate(tempDate.getDate() + 2);
   endDate = tempDate.toISOString().slice(0, 10);
 
-
   renderBlock(
-    'search-form-block',
+    "search-form-block",
     `
     <form>
       <fieldset class="search-filedset">
@@ -95,5 +143,5 @@ export function renderSearchFormBlock(startDate?: string, endDate?: string): voi
       </fieldset>
     </form>
     `
-  )
+  );
 }
