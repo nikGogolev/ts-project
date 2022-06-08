@@ -1,10 +1,23 @@
+import { FlatRentSdk } from "./libraries/flat-rent-sdk/flat-rent-sdk.js";
 import { renderBlock, renderToast } from "./lib.js";
 import { collectSearchParams, Place, SearchFormData } from "./search-form.js";
 
 export interface FavouritePlace {
-  id: number;
+  id: string;
   name: string;
   img: string;
+}
+
+export interface BookResult {
+  type: "success" | "error";
+  hotelName?: string;
+  checinDate?: Date;
+  checkoutDate?: Date;
+}
+
+export enum Provider {
+  Homy = "Homy",
+  FlatRent = "FlatRent",
 }
 
 export function renderSearchStubBlock(): void {
@@ -42,7 +55,7 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
     favoriteItems.push(place);
     localStorage.setItem("favoriteItems", JSON.stringify(favoriteItems));
     favoritesElements.forEach((el: HTMLElement) => {
-      if (+el.dataset.id === +place.id) {
+      if (String(el.dataset.id) === String(place.id)) {
         el.classList.add("active");
       }
     });
@@ -60,7 +73,7 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
         )
       );
       favoritesElements.forEach((el: HTMLElement) => {
-        if (+el.dataset.id === +place.id) {
+        if (String(el.dataset.id) === String(place.id)) {
           el.classList.remove("active");
         }
       });
@@ -71,7 +84,7 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
         JSON.stringify(localStorageFavouriteItems)
       );
       favoritesElements.forEach((el: HTMLElement) => {
-        if (+el.dataset.id === +place.id) {
+        if (String(el.dataset.id) === String(place.id)) {
           el.classList.add("active");
         }
       });
@@ -79,10 +92,10 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
   }
 }
 
-export async function bookPlace(
-  id: number,
+export async function bookPlaceHomy(
+  id: number | string,
   searchParams: SearchFormData
-): Promise<void> {
+): Promise<BookResult> {
   const f = await fetch(
     `http://127.0.0.1:3030/places/${id}?checkInDate=${searchParams.startDate}&checkOutDate=${searchParams.endDate}`,
     {
@@ -92,22 +105,71 @@ export async function bookPlace(
       },
     }
   );
-  const d = await f.json();
-  if (d.name === "BadRequest") {
-    renderToast({
-      type: "error",
-      text: "Данные даты не доступны для бронирования",
-    });
-  } else {
-    renderToast({
-      type: "success",
-      text: `Отель ${d.name} забронирован на даты с ${new Date(
-        d.bookedDates[0] / 1000
-      )} по ${new Date(d.bookedDates[d.bookedDates.length - 1] / 1000)}`,
-    });
-  }
+  const bookResult = await f.json();
 
-  console.log(d);
+  if (bookResult.name === "BadRequest") {
+    return { type: "error" };
+  } else {
+    return {
+      type: "success",
+      checinDate: new Date(searchParams.startDate),
+      checkoutDate: new Date(searchParams.endDate),
+    };
+  }
+}
+
+export async function bookPlaceFlatRent(
+  id: number | string,
+  searchParams: SearchFormData
+): Promise<BookResult> {
+  const newFlatRent = new FlatRentSdk();
+  const bookResult = newFlatRent.book(
+    id,
+    new Date(searchParams.startDate),
+    new Date(searchParams.endDate)
+  );
+  if (!bookResult) {
+    return { type: "error" };
+  } else {
+    return {
+      type: "success",
+      checinDate: new Date(searchParams.startDate),
+      checkoutDate: new Date(searchParams.endDate),
+    };
+  }
+}
+
+export async function bookPlace(
+  id: number | string,
+  searchParams: SearchFormData,
+  provider: Provider
+): Promise<void> {
+  console.log(provider);
+
+  if (provider === Provider.FlatRent) {
+    const bookResult = await bookPlaceFlatRent(id, searchParams);
+    if (bookResult.type === "error") {
+      renderToast({ text: "Отель недоступен для бронирования", type: "error" });
+    }
+    if (bookResult.type === "success") {
+      renderToast({
+        text: `Отель успешно забронирован на даты с ${bookResult.checinDate} по ${bookResult.checkoutDate}`,
+        type: "success",
+      });
+    }
+  }
+  if (provider === Provider.Homy) {
+    const bookResult = await bookPlaceHomy(id, searchParams);
+    if (bookResult.type === "error") {
+      renderToast({ text: "Отель недоступен для бронирования", type: "error" });
+    }
+    if (bookResult.type === "success") {
+      renderToast({
+        text: `Отель успешно забронирован на даты с ${bookResult.checinDate} по ${bookResult.checkoutDate}`,
+        type: "success",
+      });
+    }
+  }
 }
 
 export function renderSearchResultsBlock(results: Place[]): void {
@@ -117,7 +179,7 @@ export function renderSearchResultsBlock(results: Place[]): void {
   let resultsHTML = "";
   results.forEach((result) => {
     const faforiteIsActive = !!localStorageFavouriteItems?.find(
-      (el) => +el.id === +result.id
+      (el) => String(el.id) === String(result.id)
     );
 
     resultsHTML += `<li class="result">
@@ -136,21 +198,21 @@ export function renderSearchResultsBlock(results: Place[]): void {
               <p class="price">${result.price}&#8381;</p>
             </div>
             <div class="result-info--map"><i class="map-icon"></i> ${
-              result.remoteness
-            }км от вас</div>
+              result.remoteness ? result.remoteness + " км от вас" : ""
+            }</div>
             <div class="result-info--descr">${result.description}</div>
             <div class="result-info--footer">
               <div>
-                <button class="book-btn" data-id=${
-                  result.id
-                }>Забронировать</button>
+                <button class="book-btn" data-id=${result.id} data-provider=${
+      result.provider
+    }>Забронировать</button>
               </div>
             </div>
           </div>
         </div>
       </li>`;
   });
-  console.log(resultsHTML);
+
   renderBlock(
     "search-results-block",
     `
@@ -176,7 +238,7 @@ export function renderSearchResultsBlock(results: Place[]): void {
     favoriteItems[i].addEventListener("click", (e) => {
       if (e.target instanceof HTMLElement) {
         toggleFavoriteItem({
-          id: +e.target.dataset.id,
+          id: String(e.target.dataset.id),
           name: e.target.dataset.name,
           img: e.target.dataset.img,
         });
@@ -185,16 +247,15 @@ export function renderSearchResultsBlock(results: Place[]): void {
   }
 
   const bookButtons = document.getElementsByClassName("book-btn");
-  console.log(bookButtons);
 
   for (let i = 0; i < bookButtons.length; i++) {
     bookButtons[i].addEventListener("click", (e) => {
-      console.log(e);
-
       if (e.target instanceof HTMLButtonElement) {
-        console.log("book");
-
-        bookPlace(+e.target.dataset.id, collectSearchParams());
+        bookPlace(
+          e.target.dataset.id,
+          collectSearchParams(),
+          Provider[e.target.dataset.provider]
+        );
       }
     });
   }
