@@ -1,6 +1,7 @@
 import { FlatRentSdk } from "./libraries/flat-rent-sdk/flat-rent-sdk.js";
-import { renderBlock, renderToast } from "./lib.js";
-import { collectSearchParams, Place, SearchFormData } from "./search-form.js";
+import { renderBlock, renderToast, sortType } from "./lib.js";
+import { Place, SearchFormData } from "./search.js";
+import { renderSearchResultsBlock } from "./search-results-render.js";
 
 export interface FavouritePlace {
   id: string;
@@ -172,7 +173,7 @@ export async function bookPlace(
   }
 }
 
-export function renderSearchResultsBlock(results: Place[]): void {
+export function getResultsHTML(results: Place[]): string {
   const localStorageFavouriteItems: FavouritePlace[] = JSON.parse(
     localStorage.getItem("favoriteItems")
   );
@@ -212,51 +213,22 @@ export function renderSearchResultsBlock(results: Place[]): void {
         </div>
       </li>`;
   });
+  return resultsHTML;
+}
 
-  renderBlock(
-    "search-results-block",
-    `
-    <div class="search-results-header">
-        <p>Результаты поиска</p>
-        <div class="search-results-filter">
-            <span><i class="icon icon-filter"></i> Сортировать:</span>
-            <select>
-                <option selected="">Сначала дешёвые</option>
-                <option selected="">Сначала дорогие</option>
-                <option>Сначала ближе</option>
-            </select>
-        </div>
-    </div>
-    <ul class="results-list">
-    ${resultsHTML}
-    </ul>
-    `
-  );
-
-  const favoriteItems = document.getElementsByClassName("favorites");
-  for (let i = 0; i < favoriteItems.length; i++) {
-    favoriteItems[i].addEventListener("click", (e) => {
-      if (e.target instanceof HTMLElement) {
-        toggleFavoriteItem({
-          id: String(e.target.dataset.id),
-          name: e.target.dataset.name,
-          img: e.target.dataset.img,
-        });
-      }
-    });
+export function sortResults(results: Place[], type = sortType.cheap): void {
+  let sortedResults: Place[];
+  switch (type) {
+    case sortType.cheap:
+      sortedResults = results.sort((a, b) => a.price - b.price);
+      break;
+    case sortType.expensive:
+      sortedResults = results.sort((a, b) => b.price - a.price);
+      break;
+    case sortType.close:
+      sortedResults = results.sort((a, b) => a.remoteness - b.remoteness);
+      break;
+    default:
   }
-
-  const bookButtons = document.getElementsByClassName("book-btn");
-
-  for (let i = 0; i < bookButtons.length; i++) {
-    bookButtons[i].addEventListener("click", (e) => {
-      if (e.target instanceof HTMLButtonElement) {
-        bookPlace(
-          e.target.dataset.id,
-          collectSearchParams(),
-          Provider[e.target.dataset.provider]
-        );
-      }
-    });
-  }
+  renderSearchResultsBlock(sortedResults, type);
 }

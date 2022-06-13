@@ -66,3 +66,9 @@ export function reviver(key, value) {
   }
   return value;
 }
+
+export enum sortType {
+  cheap = "cheap",
+  expensive = "expensive",
+  close = "close",
+}
