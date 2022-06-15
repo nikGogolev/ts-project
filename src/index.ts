@@ -25,10 +25,16 @@ window.addEventListener("DOMContentLoaded", () => {
       },
     }
   );
-  document
-    .getElementById("search-form-block")
-    .addEventListener("submit", (e) => {
+  const searchFormBlock = document.getElementById("search-form-block");
+  if (searchFormBlock instanceof HTMLElement) {
+    searchFormBlock.addEventListener("submit", (e) => {
       e.preventDefault();
       search(collectSearchParams(), callback);
     });
+  } else {
+    console.log(
+      "index.ts: searchFormBlock is not HTMLFormElement",
+      searchFormBlock
+    );
+  }
 });

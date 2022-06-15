@@ -42,13 +42,14 @@ export function renderSearchResultsBlock(
   );
 
   const favoriteItems = document.getElementsByClassName("favorites");
+
   for (let i = 0; i < favoriteItems.length; i++) {
-    favoriteItems[i].addEventListener("click", (e) => {
+    favoriteItems[i]?.addEventListener("click", (e) => {
       if (e.target instanceof HTMLElement) {
         toggleFavoriteItem({
-          id: String(e.target.dataset.id),
-          name: e.target.dataset.name,
-          img: e.target.dataset.img,
+          id: String(e.target.dataset["id"]),
+          name: String(e.target.dataset["name"]),
+          img: String(e.target.dataset["img"]),
         });
       }
     });
@@ -57,25 +58,22 @@ export function renderSearchResultsBlock(
   const bookButtons = document.getElementsByClassName("book-btn");
 
   for (let i = 0; i < bookButtons.length; i++) {
-    bookButtons[i].addEventListener("click", (e) => {
+    bookButtons[i]?.addEventListener("click", (e) => {
       if (e.target instanceof HTMLButtonElement) {
-        bookPlace(
-          e.target.dataset.id,
-          collectSearchParams(),
-          Provider[e.target.dataset.provider]
-        );
+        if (typeof e.target.dataset["provider"] === "string") {
+          bookPlace(
+            String(e.target.dataset["id"]),
+            collectSearchParams(),
+            (Provider as any)[e.target.dataset["provider"]]
+          );
+        }
       }
     });
   }
   // @ts-ignore
   const e: HTMLSelectElement = document.getElementById("search-sort");
-  function show() {
-    var as = e.value;
-    var strUser = e.options[e.selectedIndex].value;
-    console.log(as, strUser);
-  }
+
   e.onchange = () => {
-    show();
-    sortResults(results, sortType[e.value]);
+    sortResults(results, (sortType as any)[e.value]);
   };
 }

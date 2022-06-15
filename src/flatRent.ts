@@ -22,7 +22,7 @@ export async function searchFlatRent(
       bookedDates: place.bookedDates,
       description: place.details,
       id: place.id,
-      image: place.photos[0],
+      image: place.photos[0] ? place.photos[0] : "NOIMG",
       name: place.title,
       price: place.totalPrice,
       provider: Provider.FlatRent,

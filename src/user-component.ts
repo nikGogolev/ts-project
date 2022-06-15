@@ -2,34 +2,38 @@ import { renderBlock } from "./lib.js";
 import { FavouritePlace } from "./search-results.js";
 import { User } from "./User.js";
 
-export function getUserData(): User {
-  const user: unknown = JSON.parse(localStorage.getItem("user"));
-  if (user === null) {
+export function getUserData(): User | null {
+  const userJSON = localStorage.getItem("user");
+
+  if (userJSON === null) {
     console.log("Данные для user отсутствуют");
     return null;
-  }
-  if (user instanceof User) {
-    return user;
   } else {
-    console.log("Данные для user некорректны");
-    return null;
+    const user = JSON.parse(userJSON);
+    if (user instanceof User) {
+      return user;
+    } else {
+      console.log("Данные для user некорректны");
+      return null;
+    }
   }
 }
 
-export function getFavoritesAmount(): number {
-  const favoriteItems: FavouritePlace[] = JSON.parse(
-    localStorage.getItem("favoriteItems")
-  );
-  if (favoriteItems?.length === 0) {
+export function getFavoritesAmount(): number | null {
+  const favoriteItemsJSON = localStorage.getItem("favoriteItems");
+
+  if (favoriteItemsJSON === null) {
     console.log("Данные для favoritesAmount отсутствуют");
     return null;
+  } else {
+    const favoriteItems: FavouritePlace[] = JSON.parse(favoriteItemsJSON);
+    return favoriteItems.length;
   }
-  return favoriteItems?.length;
 }
 
 export function renderUserBlock(
-  user: User,
-  favoriteItemsAmount?: number
+  user: User | null,
+  favoriteItemsAmount?: number | null
 ): void {
   const favoritesCaption = favoriteItemsAmount
     ? favoriteItemsAmount

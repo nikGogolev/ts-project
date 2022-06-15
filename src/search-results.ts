@@ -46,21 +46,25 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage: string): void {
 }
 
 export function toggleFavoriteItem(place: FavouritePlace): void {
-  const favoritesElements = document.querySelectorAll(".favorites");
+  const favoritesElements = document.getElementsByClassName("favorites");
+  const localStorageFavouriteItemsJSON = localStorage.getItem("favoriteItems");
 
-  const localStorageFavouriteItems: FavouritePlace[] = JSON.parse(
-    localStorage.getItem("favoriteItems")
-  );
-  if (!localStorageFavouriteItems) {
+  if (localStorageFavouriteItemsJSON === null) {
     const favoriteItems: FavouritePlace[] = [];
     favoriteItems.push(place);
     localStorage.setItem("favoriteItems", JSON.stringify(favoriteItems));
-    favoritesElements.forEach((el: HTMLElement) => {
-      if (String(el.dataset.id) === String(place.id)) {
+    Array.from(favoritesElements).forEach((el: Element) => {
+      if (
+        String(el.attributes.getNamedItem("data-id")?.nodeValue) ===
+        String(place.id)
+      ) {
         el.classList.add("active");
       }
     });
   } else {
+    const localStorageFavouriteItems: FavouritePlace[] = JSON.parse(
+      localStorageFavouriteItemsJSON
+    );
     if (
       localStorageFavouriteItems.reduce(
         (prev, current) => prev || current.id === place.id,
@@ -73,8 +77,11 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
           localStorageFavouriteItems.filter((item) => item.id !== place.id)
         )
       );
-      favoritesElements.forEach((el: HTMLElement) => {
-        if (String(el.dataset.id) === String(place.id)) {
+      Array.from(favoritesElements).forEach((el: Element) => {
+        if (
+          String(el.attributes.getNamedItem("data-id")?.nodeValue) ===
+          String(place.id)
+        ) {
           el.classList.remove("active");
         }
       });
@@ -84,8 +91,11 @@ export function toggleFavoriteItem(place: FavouritePlace): void {
         "favoriteItems",
         JSON.stringify(localStorageFavouriteItems)
       );
-      favoritesElements.forEach((el: HTMLElement) => {
-        if (String(el.dataset.id) === String(place.id)) {
+      Array.from(favoritesElements).forEach((el: Element) => {
+        if (
+          String(el.attributes.getNamedItem("data-id")?.nodeValue) ===
+          String(place.id)
+        ) {
           el.classList.add("active");
         }
       });
@@ -174,9 +184,13 @@ export async function bookPlace(
 }
 
 export function getResultsHTML(results: Place[]): string {
-  const localStorageFavouriteItems: FavouritePlace[] = JSON.parse(
-    localStorage.getItem("favoriteItems")
-  );
+  const localStorageFavouriteItemsJSON = localStorage.getItem("favoriteItems");
+  let localStorageFavouriteItems: FavouritePlace[] | null;
+  if (localStorageFavouriteItemsJSON === null) {
+    localStorageFavouriteItems = null;
+  } else {
+    localStorageFavouriteItems = JSON.parse(localStorageFavouriteItemsJSON);
+  }
   let resultsHTML = "";
   results.forEach((result) => {
     const faforiteIsActive = !!localStorageFavouriteItems?.find(
@@ -217,7 +231,7 @@ export function getResultsHTML(results: Place[]): string {
 }
 
 export function sortResults(results: Place[], type = sortType.cheap): void {
-  let sortedResults: Place[];
+  let sortedResults: Place[] = [];
   switch (type) {
     case sortType.cheap:
       sortedResults = results.sort((a, b) => a.price - b.price);
@@ -226,7 +240,13 @@ export function sortResults(results: Place[], type = sortType.cheap): void {
       sortedResults = results.sort((a, b) => b.price - a.price);
       break;
     case sortType.close:
-      sortedResults = results.sort((a, b) => a.remoteness - b.remoteness);
+      sortedResults = results.sort((a, b) => {
+        if (a.remoteness !== undefined && b.remoteness !== undefined) {
+          return a.remoteness - b.remoteness;
+        } else {
+          return 0;
+        }
+      });
       break;
     default:
   }
