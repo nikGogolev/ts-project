@@ -30,11 +30,15 @@ export interface RenderFormParams {
 }
 
 interface PlaceCallback {
-  (error?: Error, result?: Place[]): void;
+  (error?: Error | null, result?: Place[] | null): void;
 }
 
 export const callback: PlaceCallback = (error, result) => {
-  if (error === null && result !== null) {
+  if (
+    (error === undefined || error === null) &&
+    result !== null &&
+    result !== undefined
+  ) {
     renderSearchResultsBlock(result);
   } else {
     renderToast({ type: "error", text: "Повторите поиск" });
