@@ -1,8 +1,17 @@
-import { renderBlock } from './lib.js'
+import { renderBlock } from "./lib.js";
+import { getRenderFormParams } from "./search.js";
 
-export function renderSearchFormBlock () {
+export function renderSearchFormBlock(
+  ckeckinDate?: string,
+  ckeckoutDate?: string
+): void {
+  const { checkinDate, checkoutDate, minDate, maxDate } = getRenderFormParams(
+    ckeckinDate,
+    ckeckoutDate
+  );
+
   renderBlock(
-    'search-form-block',
+    "search-form-block",
     `
     <form>
       <fieldset class="search-filedset">
@@ -20,11 +29,11 @@ export function renderSearchFormBlock () {
         <div class="row">
           <div>
             <label for="check-in-date">Дата заезда</label>
-            <input id="check-in-date" type="date" value="2021-05-11" min="2021-05-11" max="2021-06-30" name="checkin" />
+            <input id="check-in-date" type="date" value=${checkinDate} min=${minDate} max=${maxDate} name="checkin" />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
-            <input id="check-out-date" type="date" value="2021-05-13" min="2021-05-11" max="2021-06-30" name="checkout" />
+            <input id="check-out-date" type="date" value=${checkoutDate} min=${minDate} max=${maxDate} name="checkout" />
           </div>
           <div>
             <label for="max-price">Макс. цена суток</label>
@@ -37,5 +46,5 @@ export function renderSearchFormBlock () {
       </fieldset>
     </form>
     `
-  )
+  );
 }
